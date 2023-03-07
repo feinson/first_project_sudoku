@@ -1,11 +1,13 @@
 import numpy as np
 from itertools import product
 import time
-import threading
 
 
 class Board:
-
+    """
+    The Board class is a wrapper for a list of lists that represents the sudoku, complete with a nice "__repr__" and methods for checking validity
+    and solving sudokus. Zeros represent empty spaces.
+    """
     def __init__(self, list_of_rows) -> None:
         self.numbers = list_of_rows
         self.length = len(self.numbers)
@@ -93,6 +95,19 @@ class Board:
         return True
     
     def solve(self):
+        """
+        This is where the solving happens. We first try Donald Knuth's exact cover algorithm. If this hasn't presented a solution after a certain
+        period of time, we resort to an exhaustive search backtracking algorithm. This is because the Knuth algorithm is bad at very sparse 
+        sudokus that have many solutions.
+        The Sudoku is assumed to be unsolvable if Knuth's algorithm terminates prematurely, or if no solution has been found within 10 seconds of 
+        exhaustive search. 
+        The exhaustive search with backtracking can be slow for certain inputs which require it to check a very large number of combinations. If the 
+        search has not identified a quick solution, we transpose the matrix and try again. The combinations which were previously the last to be tried, are now the
+        first, and so very long waits are avoided.
+
+        I have yet to find a Sudoku for which this method does not return the desired solution/non-solution in an acceptable time 
+        frame.
+        """
 
         def exact_cover(x, y):
             x = {j: set() for j in x}
@@ -157,12 +172,13 @@ class Board:
 
             
             for solution in solve(x, y, []):
-                if time.time() - start_time > 3:
+                if time.time() - start_time > 0.1:
                     raise TimeoutError
                 for (r, c, n) in solution:
                     res[r][c] = n
 
             if any([0 in line for line in res]):
+                # Return unsolvable if the Knuth algorithm terminates prematurely.
                 return "Unsolvable"
 
             return Board(res)
@@ -171,7 +187,7 @@ class Board:
             pass
 
         try:
-            print("sorry knuth")
+            print("Using backtracking")
             
             newbo = Board(self.numbers)
             empties = newbo.find_empties()
@@ -190,11 +206,12 @@ class Board:
             
             return newbo
         except:
+            print("Using backtracking")
             pass
 
         try:
             self.numbers = np.array(self.numbers).T.tolist()
-            print("and again")
+            
         
             
             newbo = Board(self.numbers)
@@ -230,15 +247,15 @@ if __name__ == "__main__":
         ])
     
     bo2 = Board([
-            [1, 2, 3, 4, 5, 6, 0, 8, 9],
-            [0, 0, 0, 0, 0, 0, 7, 0 ,0],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 2, 0, 0, 0, 0, 0, 0 ,0],
+            [0, 0, 3, 0, 0, 0, 0, 0 ,0],
+            [0, 0, 0, 0, 0, 0, 0, 0 ,0],
+            [0, 0, 0, 0, 5, 0, 0, 0 ,0],
             [0, 0, 0, 0, 0, 0, 0, 0 ,0],
             [0, 0, 0, 0, 0, 0, 0, 0 ,0],
             [0, 0, 0, 0, 0, 0, 0, 0 ,0],
-            [0, 0, 0, 0, 0, 0, 0, 0 ,0],
-            [0, 0, 0, 0, 0, 0, 0, 0 ,0],
-            [0, 0, 0, 0, 0, 0, 0, 0 ,0],
-            [0, 0, 0, 0, 0, 0, 0, 0 ,0]
+            [9, 0, 0, 0, 0, 0, 0, 0 ,0]
         ])
 
     print(bo.solve())

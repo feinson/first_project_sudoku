@@ -5,6 +5,9 @@ import numpy as np
 
 
 if __name__ == "__main__":
+    # This is some of the code I first wrote in Python. It's not very well organised, but it works very nicely and so I don't feel
+    # like changing it.
+
     root = Tk()
     root.title("Sudoku solver")
     root.resizable(False,False)
@@ -18,6 +21,7 @@ if __name__ == "__main__":
     canvas.create_line(300,100,300,700, fill="black", width=5)
     canvas.create_line(500,100,500,700, fill="black", width=5)
 
+    #Drawing the grid lines
     for i in range(3):
         canvas.create_line(100+(200*i)+66,100,100+(200*i)+66,700, fill='black', width=1)
     for i in range(3):
@@ -34,10 +38,7 @@ if __name__ == "__main__":
     disclaimer.place(x=514,y=780)
 
     #itd probably be worth making something which takes i,j input and turns it into normal
-    ijconverter =[]
-    for i in range(9):
-        for j in range(9):
-            ijconverter.append([i,j])
+    ijconverter = [[i*9 + j for j in range(9)] for i in range(9)]
 
     labels=[]
 
@@ -113,7 +114,7 @@ if __name__ == "__main__":
         aboard = np.zeros((9,9), dtype=int)
         for i in range(9):
             for j in range(9):
-                entry_to_use = ijconverter.index([i,j])
+                entry_to_use = ijconverter[i][j]
                 if not entries[entry_to_use].get():
                     aboard[i][j] = 0
                 else:
@@ -127,7 +128,6 @@ if __name__ == "__main__":
                 print(display_board)
                 create_label(display_board)
             except:
-                print("show unsolvable")
                 show_unsolvable()
         else:
             show_error()
