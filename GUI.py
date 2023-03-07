@@ -69,8 +69,9 @@ if __name__ == "__main__":
                 entries.append(tmp)
 
 
-
     def create_label(sol_board: Board):
+        if isinstance(sol_board, str):
+            raise TypeError
         global labels
         for label in labels: label.destroy()
         labels=[]
@@ -81,11 +82,14 @@ if __name__ == "__main__":
                 labels.append(tmp)
 
 
-
     def start_new():
         global labels
         try:
             ermsg.destroy()
+        except:
+            pass
+        try:
+            unsolvable_msg.destroy()
         except:
             pass
         for label in labels: label.destroy()
@@ -99,34 +103,40 @@ if __name__ == "__main__":
         ermsg.place(x=310,y=50)
         labels.append(ermsg)
 
-    def solve():
+    def show_unsolvable():
+        global unsolvable_msg
+        unsolvable_msg = Label(root, text="Board appears to be unsolvable.", font=('FranklinGothicHeavy 15'), fg ='red')
+        unsolvable_msg.place(x=310,y=50)
+        labels.append(unsolvable_msg)
+
+    def solve_sudoku():
         aboard = np.zeros((9,9), dtype=int)
-        try:
-            for i in range(9):
-                for j in range(9):
-                    entry_to_use = ijconverter.index([i,j])
-                    if not entries[entry_to_use].get():
-                        aboard[i][j] = 0
-                    else:
-                        aboard[i][j] = int(entries[entry_to_use].get())
-            bo = Board(aboard.tolist())
-            
-            if bo.valid_check() and aboard.max()<10 and aboard.min()>-1:
-                for entry in entries: entry.destroy()
-                display_board = bo.solver()
+        for i in range(9):
+            for j in range(9):
+                entry_to_use = ijconverter.index([i,j])
+                if not entries[entry_to_use].get():
+                    aboard[i][j] = 0
+                else:
+                    aboard[i][j] = int(entries[entry_to_use].get())
+        bo = Board(aboard.tolist())
+        
+        if bo.valid_check() and aboard.max()<10 and aboard.min()>-1:
+            for entry in entries: entry.destroy()
+            try:
+                display_board = bo.solve()
+                print(display_board)
                 create_label(display_board)
-            else:
-                show_error()
-                    
-        except:
-            print("here2")
+            except:
+                print("show unsolvable")
+                show_unsolvable()
+        else:
             show_error()
-            pass
+                    
 
 
     inputnew_button=Button(root, text = "Input new", command=start_new, font=('FranklinGothicHeavy 20'))
     canvas.create_window(170, 60, window=inputnew_button)
-    inputnew_button=Button(root, text = "Solve", command=solve, font=('FranklinGothicHeavy 20'))
+    inputnew_button=Button(root, text = "Solve", command=solve_sudoku, font=('FranklinGothicHeavy 20'))
     canvas.create_window(656, 60, window=inputnew_button)
 
     initialise()

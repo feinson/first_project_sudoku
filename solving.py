@@ -1,4 +1,8 @@
 import numpy as np
+from itertools import product
+import time
+import threading
+
 
 class Board:
 
@@ -41,6 +45,9 @@ class Board:
     def get_blocks(self):
         # This returns a np array, in which each list corresponds to 
         return np.array(self.numbers).reshape((3,3,3,3)).transpose((0,2,1,3)).reshape((9,9))
+    
+    def flip(self):
+        return Board(np.array(self.numbers).T.tolist())
 
 
     def valid_check(self):
@@ -85,18 +92,129 @@ class Board:
             
         return True
     
-    def solver(self):
-        newbo = Board(self.numbers)
-        empties = newbo.find_empties()
-        i = 0
-        while not newbo.solved_check():
-            newbo.numbers[empties[i][0]][empties[i][1]] = newbo[empties[i][0]][empties[i][1]] + 1 
-            if newbo[empties[i][0], empties[i][1]] == 10:
-                newbo.numbers[empties[i][0]][empties[i][1]] = 0
-                i -= 1
-            elif newbo.valid_check():
-                i += 1
-        return newbo
+    def solve(self):
+
+        def exact_cover(x, y):
+            x = {j: set() for j in x}
+            for i, row in y.items():
+                for j in row:
+                    x[j].add(i)
+            return x
+        def solve(x, y, solution):
+            if not x:
+                yield list(solution)
+            else:
+                c = min(x, key=lambda c: len(x[c]))
+                for r in list(x[c]):
+                    solution.append(r)
+                    cols = select(x, y, r)
+                    for s in solve(x, y, solution):
+                        yield s
+                    deselect(x, y, r, cols)
+                    solution.pop()
+
+        def select(x, y, r):
+            cols = []
+            for j in y[r]:
+                for i in x[j]:
+                    for k in y[i]:
+                        if k != j:
+                            x[k].remove(i)
+                cols.append(x.pop(j))
+            return cols
+
+        def deselect(x, y, r, cols):
+            for j in reversed(y[r]):
+                x[j] = cols.pop()
+                for i in x[j]:
+                    for k in y[i]:
+                        if k != j:
+                            x[k].add(i)
+
+        start_time = time.time()
+        try:
+        
+            grid = self.numbers
+            res = [line for line in grid]
+            x = ([("rc", rc) for rc in product(range(9), range(9))] +
+                    [("rn", rn) for rn in product(range(9), range(1, 10))] +
+                    [("cn", cn) for cn in product(range(9), range(1, 10))] +
+                    [("bn", bn) for bn in product(range(9), range(1, 10))])
+            y = dict()
+            for r, c, n in product(range(9), range(9), range(1, 10)):
+                b = (r // 3) * 3 + (c // 3)
+                y[(r, c, n)] = [
+                    ("rc", (r, c)),
+                    ("rn", (r, n)),
+                    ("cn", (c, n)),
+                    ("bn", (b, n))]
+
+            x = exact_cover(x, y)
+            for i, line in enumerate(grid):
+                for j, tile in enumerate(line):
+                    if tile:
+                        select(x, y, (i, j, tile))
+
+            
+            for solution in solve(x, y, []):
+                if time.time() - start_time > 3:
+                    raise TimeoutError
+                for (r, c, n) in solution:
+                    res[r][c] = n
+
+            if any([0 in line for line in res]):
+                return "Unsolvable"
+
+            return Board(res)
+        
+        except:
+            pass
+
+        try:
+            print("sorry knuth")
+            
+            newbo = Board(self.numbers)
+            empties = newbo.find_empties()
+            i = 0
+            while not newbo.solved_check():
+
+                if time.time() - start_time > 5:
+                    raise TimeoutError
+                
+                newbo.numbers[empties[i][0]][empties[i][1]] = newbo[empties[i][0]][empties[i][1]] + 1 
+                if newbo[empties[i][0], empties[i][1]] == 10:
+                    newbo.numbers[empties[i][0]][empties[i][1]] = 0
+                    i -= 1
+                elif newbo.valid_check():
+                    i += 1
+            
+            return newbo
+        except:
+            pass
+
+        try:
+            self.numbers = np.array(self.numbers).T.tolist()
+            print("and again")
+        
+            
+            newbo = Board(self.numbers)
+            empties = newbo.find_empties()
+            i = 0
+            while not newbo.solved_check():
+                
+                if time.time() - start_time > 10:
+                    raise TimeoutError("appears to be impossible")
+
+                newbo.numbers[empties[i][0]][empties[i][1]] = newbo[empties[i][0]][empties[i][1]] + 1 
+                if newbo[empties[i][0], empties[i][1]] == 10:
+                    newbo.numbers[empties[i][0]][empties[i][1]] = 0
+                    i -= 1
+                elif newbo.valid_check():
+                    i += 1
+            return newbo.flip()
+        except:
+            return "Unsolvable"
+        
 
 if __name__ == "__main__":
     bo = Board([
@@ -110,5 +228,17 @@ if __name__ == "__main__":
             [1, 0, 3, 0, 4, 0, 9, 7, 0],
             [5, 8, 0, 7, 0, 0, 2, 6, 4]
         ])
+    
+    bo2 = Board([
+            [1, 2, 3, 4, 5, 6, 0, 8, 9],
+            [0, 0, 0, 0, 0, 0, 7, 0 ,0],
+            [0, 0, 0, 0, 0, 0, 0, 0 ,0],
+            [0, 0, 0, 0, 0, 0, 0, 0 ,0],
+            [0, 0, 0, 0, 0, 0, 0, 0 ,0],
+            [0, 0, 0, 0, 0, 0, 0, 0 ,0],
+            [0, 0, 0, 0, 0, 0, 0, 0 ,0],
+            [0, 0, 0, 0, 0, 0, 0, 0 ,0],
+            [0, 0, 0, 0, 0, 0, 0, 0 ,0]
+        ])
 
-    print(bo.solver())
+    print(bo.solve())
