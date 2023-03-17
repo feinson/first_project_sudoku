@@ -206,7 +206,6 @@ class Board:
             
             return newbo
         except:
-            print("Using backtracking")
             pass
 
         try:
